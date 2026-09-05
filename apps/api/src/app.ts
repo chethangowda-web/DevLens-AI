@@ -6,6 +6,7 @@ import { env } from './config/env';
 import { requestLogger } from './middleware/requestLogger';
 import { errorHandler, AppError } from './middleware/errorHandler';
 import { healthRouter } from './routes/health.router';
+import { authRouter } from './modules/auth/auth.router';
 
 export const createApp = (): Express => {
   const app = express();
@@ -32,6 +33,7 @@ export const createApp = (): Express => {
   // Routes
   app.use('/health', healthRouter);
   app.use('/api/v1/health', healthRouter);
+  app.use('/api/v1/auth', authRouter);
 
   // 404 Catch-All Route
   app.use((req, _res, next) => {
