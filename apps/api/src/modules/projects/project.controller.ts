@@ -3,6 +3,8 @@ import { ProjectService } from './project.service';
 import { ApiResponseUtil } from '../../utils/apiResponse';
 import { createProjectSchema } from './project.types';
 
+import { hybridSearch } from '../rag/retrieval.service';
+
 export class ProjectController {
   static async createProject(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
@@ -64,6 +66,30 @@ export class ProjectController {
       const fileId = req.params.fileId as string;
       const data = await ProjectService.getFileContent(fileId, userId);
       ApiResponseUtil.success(res, data);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async searchRepository(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const userId = req.user!.userId;
+      const repoId = req.params.repositoryId as string;
+      const { query, limit } = req.body;
+      
+      if (!query || typeof query !== 'string') {
+        res.status(400).json({ success: false, message: 'Invalid query string' });
+        return;
+      }
+      
+      // We will delegate to a new search function inside ProjectService or RagService.
+      // Since hybridSearch is in rag module, we can call it here directly for now,
+      // but ideally we should verify user has access to repoId first.
+      await ProjectService.getRepositoryFileTree(repoId, userId); // verify access
+      
+      const results = await hybridSearch(repoId, query, limit || 8);
+      
+      ApiResponseUtil.success(res, { results });
     } catch (error) {
       next(error);
     }

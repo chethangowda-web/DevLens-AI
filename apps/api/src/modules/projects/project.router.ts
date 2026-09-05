@@ -15,3 +15,6 @@ projectRouter.delete('/:projectId', ProjectController.deleteProject);
 // Repository file browsing
 projectRouter.get('/repositories/:repositoryId/files', ProjectController.getRepositoryFiles);
 projectRouter.get('/files/:fileId/content', ProjectController.getFileContent);
+
+// Repository search
+projectRouter.post('/:projectId/repositories/:repositoryId/search', ProjectController.searchRepository);

@@ -23,6 +23,8 @@ interface WorkspaceState {
   diffModified: string;
   isChatOpen: boolean;
 
+  isSearchModalOpen: boolean;
+
   setProjects: (projects: Array<Project & { repositories: Repository[] }>) => void;
   setActiveProject: (project: (Project & { repositories: Repository[] }) | null) => void;
   setActiveRepo: (repo: Repository | null) => void;
@@ -36,6 +38,7 @@ interface WorkspaceState {
   closeDiff: () => void;
   toggleChat: () => void;
   setChatOpen: (open: boolean) => void;
+  setSearchModalOpen: (open: boolean) => void;
 }
 
 export const useWorkspaceStore = create<WorkspaceState>((set) => ({
@@ -50,6 +53,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set) => ({
   diffOriginal: '',
   diffModified: '',
   isChatOpen: true,
+  isSearchModalOpen: false,
 
   setProjects: (projects) => set({ projects }),
   setActiveProject: (project) => set({ activeProject: project }),
@@ -90,4 +94,5 @@ export const useWorkspaceStore = create<WorkspaceState>((set) => ({
 
   toggleChat: () => set((state) => ({ isChatOpen: !state.isChatOpen })),
   setChatOpen: (open) => set({ isChatOpen: open }),
+  setSearchModalOpen: (open) => set({ isSearchModalOpen: open }),
 }));
