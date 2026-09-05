@@ -9,12 +9,12 @@ module.exports = {
     '^.+\\.tsx?$': [
       'ts-jest',
       {
-        isolatedModules: true,
         diagnostics: {
           ignoreCodes: [151002],
         },
       },
     ],
   },
+  maxWorkers: 1,
   forceExit: true,
 };

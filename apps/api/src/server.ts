@@ -5,6 +5,7 @@ import { logger } from './utils/logger';
 import { db } from './db/client';
 import { redis } from './db/redis';
 import { runMigrations } from './db/migrate';
+import { createIngestionWorker } from './workers/ingestion.worker';
 
 async function bootstrap() {
   try {
@@ -18,7 +19,11 @@ async function bootstrap() {
       logger.warn('Redis lazy connection error (will retry on demand)', { error: err.message });
     });
 
-    // 3. Start HTTP server
+    // 3. Start BullMQ Background Ingestion Worker
+    const ingestionWorker = createIngestionWorker();
+    logger.info('🚀 BullMQ Ingestion Worker started');
+
+    // 4. Start HTTP server
     const app = createApp();
     const server = http.createServer(app);
 
@@ -27,11 +32,13 @@ async function bootstrap() {
       logger.info(`📡 Health check available at http://localhost:${env.PORT}/health`);
     });
 
-    // 4. Graceful Shutdown Handlers
+    // 5. Graceful Shutdown Handlers
     const shutdown = async (signal: string) => {
       logger.info(`Received ${signal}. Shutting down gracefully...`);
       server.close(async () => {
         logger.info('HTTP server closed');
+        await ingestionWorker.close();
+        logger.info('Ingestion worker closed');
         await db.close();
         redis.disconnect();
         logger.info('Process exiting cleanly');

@@ -8,6 +8,7 @@ import { errorHandler, AppError } from './middleware/errorHandler';
 import { healthRouter } from './routes/health.router';
 import { authRouter } from './modules/auth/auth.router';
 import { projectRouter } from './modules/projects/project.router';
+import { ingestionRouter } from './modules/ingestion/ingestion.router';
 
 export const createApp = (): Express => {
   const app = express();
@@ -36,6 +37,7 @@ export const createApp = (): Express => {
   app.use('/api/v1/health', healthRouter);
   app.use('/api/v1/auth', authRouter);
   app.use('/api/v1/projects', projectRouter);
+  app.use('/api/v1', ingestionRouter);
 
   // 404 Catch-All Route
   app.use((req, _res, next) => {
