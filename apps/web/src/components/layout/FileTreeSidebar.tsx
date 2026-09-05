@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useWorkspaceStore } from '../../stores/workspaceStore';
+import { projectService, FileTreeNode } from '../../services/projectService';
 import { 
   Folder, 
   FolderOpen, 
@@ -11,18 +12,8 @@ import {
   Code2
 } from 'lucide-react';
 
-interface FileNode {
-  id: string;
-  name: string;
-  path: string;
-  type: 'file' | 'directory';
-  language?: string;
-  content?: string;
-  children?: FileNode[];
-}
-
-// Sample file tree for initial workspace demonstration
-const sampleFileTree: FileNode[] = [
+// Default starter files if no repository is indexed yet
+const defaultStarterFiles: FileTreeNode[] = [
   {
     id: 'src',
     name: 'src',
@@ -41,7 +32,6 @@ const sampleFileTree: FileNode[] = [
             path: 'src/auth/jwt.service.ts',
             type: 'file',
             language: 'typescript',
-            content: `// Sample Source Code\nimport jwt from 'jsonwebtoken';\n\nexport class JwtService {\n  static verifyToken(token: string) {\n    return jwt.verify(token, process.env.JWT_SECRET!);\n  }\n}`,
           },
           {
             id: 'src/auth/password.util.ts',
@@ -49,7 +39,6 @@ const sampleFileTree: FileNode[] = [
             path: 'src/auth/password.util.ts',
             type: 'file',
             language: 'typescript',
-            content: `// Password Hashing Utility\nimport { hash, verify } from '@node-rs/argon2';\n\nexport class PasswordUtil {\n  static async hash(pwd: string) {\n    return await hash(pwd);\n  }\n}`,
           },
         ],
       },
@@ -59,7 +48,6 @@ const sampleFileTree: FileNode[] = [
         path: 'src/server.ts',
         type: 'file',
         language: 'typescript',
-        content: `import express from 'express';\n\nconst app = express();\nconst PORT = process.env.PORT || 5000;\n\napp.listen(PORT, () => {\n  console.log(\`Server listening on \${PORT}\`);\n});`,
       },
     ],
   },
@@ -69,7 +57,6 @@ const sampleFileTree: FileNode[] = [
     path: 'package.json',
     type: 'file',
     language: 'json',
-    content: `{\n  "name": "devlens-demo",\n  "version": "1.0.0",\n  "main": "index.js"\n}`,
   },
   {
     id: 'README.md',
@@ -77,12 +64,11 @@ const sampleFileTree: FileNode[] = [
     path: 'README.md',
     type: 'file',
     language: 'markdown',
-    content: `# DevLens AI Workspace\n\nWelcome to your intelligent developer assistant workspace.`,
   },
 ];
 
 export const FileTreeSidebar: React.FC = () => {
-  const { openFile, activeTabId } = useWorkspaceStore();
+  const { fileTree, openFile, activeTabId } = useWorkspaceStore();
   const [expandedFolders, setExpandedFolders] = useState<Record<string, boolean>>({
     src: true,
     'src/auth': true,
@@ -92,7 +78,35 @@ export const FileTreeSidebar: React.FC = () => {
     setExpandedFolders((prev) => ({ ...prev, [path]: !prev[path] }));
   };
 
-  const renderNode = (node: FileNode, depth = 0) => {
+  const handleFileClick = async (node: FileTreeNode) => {
+    try {
+      // If node id is UUID, fetch content from API, else default sample content
+      let content = `// Source file: ${node.path}\n// Ready for AI codebase indexing`;
+      if (node.id.length > 20 && !node.id.startsWith('src/')) {
+        content = await projectService.getFileContent(node.id);
+      } else if (node.path === 'src/auth/jwt.service.ts') {
+        content = `import jwt from 'jsonwebtoken';\n\nexport class JwtService {\n  static verify(token: string) {\n    return jwt.verify(token, process.env.JWT_SECRET!);\n  }\n}`;
+      } else if (node.path === 'package.json') {
+        content = `{\n  "name": "devlens-demo",\n  "version": "1.0.0"\n}`;
+      } else if (node.path === 'README.md') {
+        content = `# DevLens AI Workspace\n\nReady for natural language repository search and explanation.`;
+      }
+
+      openFile({
+        id: node.id,
+        name: node.name,
+        path: node.path,
+        language: node.language || 'typescript',
+        content,
+      });
+    } catch (err) {
+      console.error('Failed to open file', err);
+    }
+  };
+
+  const currentTree = fileTree.length > 0 ? fileTree : defaultStarterFiles;
+
+  const renderNode = (node: FileTreeNode, depth = 0) => {
     const isExpanded = expandedFolders[node.path];
     const isSelected = activeTabId === node.id;
 
@@ -126,17 +140,7 @@ export const FileTreeSidebar: React.FC = () => {
     return (
       <div
         key={node.path}
-        onClick={() => {
-          if (node.content) {
-            openFile({
-              id: node.id,
-              name: node.name,
-              path: node.path,
-              language: node.language || 'typescript',
-              content: node.content,
-            });
-          }
-        }}
+        onClick={() => handleFileClick(node)}
         style={{ paddingLeft: `${depth * 14 + 20}px` }}
         className={`flex items-center space-x-1.5 py-1 px-2 rounded cursor-pointer text-xs font-mono transition-colors ${
           isSelected
@@ -165,7 +169,7 @@ export const FileTreeSidebar: React.FC = () => {
         </div>
       </div>
       <div className="flex-1 overflow-y-auto py-2 px-1">
-        {sampleFileTree.map((node) => renderNode(node, 0))}
+        {currentTree.map((node) => renderNode(node, 0))}
       </div>
     </aside>
   );

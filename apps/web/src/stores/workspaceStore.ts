@@ -1,4 +1,6 @@
 import { create } from 'zustand';
+import { Project, Repository } from '@devlens/types';
+import { FileTreeNode } from '../services/projectService';
 
 export interface OpenTab {
   id: string;
@@ -9,8 +11,10 @@ export interface OpenTab {
 }
 
 interface WorkspaceState {
-  activeProjectId: string | null;
-  activeRepoId: string | null;
+  projects: Array<Project & { repositories: Repository[] }>;
+  activeProject: (Project & { repositories: Repository[] }) | null;
+  activeRepo: Repository | null;
+  fileTree: FileTreeNode[];
   openTabs: OpenTab[];
   activeTabId: string | null;
   activeLineHighlight: { start: number; end: number } | null;
@@ -19,8 +23,10 @@ interface WorkspaceState {
   diffModified: string;
   isChatOpen: boolean;
 
-  setActiveProject: (projectId: string | null) => void;
-  setActiveRepo: (repoId: string | null) => void;
+  setProjects: (projects: Array<Project & { repositories: Repository[] }>) => void;
+  setActiveProject: (project: (Project & { repositories: Repository[] }) | null) => void;
+  setActiveRepo: (repo: Repository | null) => void;
+  setFileTree: (tree: FileTreeNode[]) => void;
   openFile: (file: { id: string; name: string; path: string; language: string; content: string }) => void;
   closeTab: (tabId: string) => void;
   setActiveTab: (tabId: string) => void;
@@ -33,8 +39,10 @@ interface WorkspaceState {
 }
 
 export const useWorkspaceStore = create<WorkspaceState>((set) => ({
-  activeProjectId: null,
-  activeRepoId: null,
+  projects: [],
+  activeProject: null,
+  activeRepo: null,
+  fileTree: [],
   openTabs: [],
   activeTabId: null,
   activeLineHighlight: null,
@@ -43,8 +51,10 @@ export const useWorkspaceStore = create<WorkspaceState>((set) => ({
   diffModified: '',
   isChatOpen: true,
 
-  setActiveProject: (projectId) => set({ activeProjectId: projectId }),
-  setActiveRepo: (repoId) => set({ activeRepoId: repoId }),
+  setProjects: (projects) => set({ projects }),
+  setActiveProject: (project) => set({ activeProject: project }),
+  setActiveRepo: (repo) => set({ activeRepo: repo }),
+  setFileTree: (fileTree) => set({ fileTree }),
 
   openFile: (file) =>
     set((state) => {
