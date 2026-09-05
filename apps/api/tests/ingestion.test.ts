@@ -131,6 +131,15 @@ describe('Repository Ingestion & Sanitization Suite', () => {
       expect(paths).toContain('src/utils/math.ts');
       expect(paths).not.toContain('.env');
       expect(paths).not.toContain('package-lock.json');
+
+      // 4. Verify AST chunks are stored in database
+      const chunksRes = await db.query(
+        `SELECT c.* FROM code_chunks c
+         JOIN code_files f ON c.file_id = f.id
+         WHERE f.repository_id = $1`,
+        [repositoryId]
+      );
+      expect(chunksRes.rows.length).toBeGreaterThan(0);
     });
   });
 });

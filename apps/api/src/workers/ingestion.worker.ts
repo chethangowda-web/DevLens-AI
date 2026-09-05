@@ -9,6 +9,7 @@ import { logger } from '../utils/logger';
 import { db } from '../db/client';
 import { sanitizeCodeContent } from '../utils/secretSanitizer';
 import { isIngestableFile } from '../utils/fileFilters';
+import { chunkCodeFile } from '@devlens/code-parser';
 import { INGESTION_QUEUE_NAME } from '../modules/ingestion/ingestion.queue';
 import { IngestionJobPayload } from '../modules/ingestion/ingestion.types';
 
@@ -103,9 +104,11 @@ export function createIngestionWorker(): Worker<IngestionJobPayload> {
         logger.info(`Found ${allRelativeFiles.length} total files in workspace`);
 
         let validFilesCount = 0;
+        let totalChunksCount = 0;
         const maxFileSizeBytes = env.MAX_FILE_SIZE_KB * 1024;
+        const dummyVector = `[${new Array(1536).fill(0).join(',')}]`;
 
-        // Clear existing files if re-indexing
+        // Clear existing files if re-indexing (cascade deletes chunks)
         await db.query(`DELETE FROM code_files WHERE repository_id = $1`, [repositoryId]);
 
         for (let i = 0; i < allRelativeFiles.length; i++) {
@@ -123,21 +126,43 @@ export function createIngestionWorker(): Worker<IngestionJobPayload> {
           const fileHash = crypto.createHash('sha256').update(sanitizedContent).digest('hex');
 
           // Insert into code_files table
-          await db.query(
+          const fileRes = await db.query(
             `INSERT INTO code_files (repository_id, file_path, language, file_size_bytes, file_hash)
-             VALUES ($1, $2, $3, $4, $5)`,
+             VALUES ($1, $2, $3, $4, $5)
+             RETURNING id`,
             [repositoryId, relPath, check.language, stat.size, fileHash]
           );
-
+          const fileId = fileRes.rows[0].id;
           validFilesCount++;
+
+          // Parse code into AST structural chunks
+          const chunks = chunkCodeFile(relPath, sanitizedContent, check.language);
+
+          for (const chunk of chunks) {
+            await db.query(
+              `INSERT INTO code_chunks (file_id, content, embedding, start_line, end_line, symbol_name, symbol_type, chunk_hash)
+               VALUES ($1, $2, $3::vector, $4, $5, $6, $7, $8)`,
+              [
+                fileId,
+                chunk.content,
+                dummyVector,
+                chunk.startLine,
+                chunk.endLine,
+                chunk.symbolName,
+                chunk.symbolType,
+                chunk.chunkHash,
+              ]
+            );
+            totalChunksCount++;
+          }
         }
 
         // 5. Update progress to 100% and finalize statuses
         await db.query(
           `UPDATE repositories 
-           SET status = 'INDEXED', total_files = $2, last_indexed_at = NOW() 
+           SET status = 'INDEXED', total_files = $2, total_chunks = $3, last_indexed_at = NOW() 
            WHERE id = $1`,
-          [repositoryId, validFilesCount]
+          [repositoryId, validFilesCount, totalChunksCount]
         );
 
         await db.query(
@@ -147,7 +172,9 @@ export function createIngestionWorker(): Worker<IngestionJobPayload> {
           [jobId]
         );
 
-        logger.info(`Ingestion completed successfully for repository ${repositoryId} (${validFilesCount} files indexed)`);
+        logger.info(
+          `Ingestion completed successfully for repository ${repositoryId} (${validFilesCount} files, ${totalChunksCount} chunks indexed)`
+        );
       } catch (error) {
         const errorMsg = (error as Error).message;
         logger.error(`Ingestion job ${jobId} failed: ${errorMsg}`, { stack: (error as Error).stack });

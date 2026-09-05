@@ -10,6 +10,7 @@
     "test": "jest --passWithNoTests"
   },
   "dependencies": {
+    "@devlens/code-parser": "workspace:*",
     "@devlens/types": "workspace:*",
     "@node-rs/argon2": "^2.2.0",
     "adm-zip": "^0.6.0",

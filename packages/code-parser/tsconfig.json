@@ -1,0 +1,9 @@
+{
+  "extends": "@devlens/config/tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "isolatedModules": true
+  },
+  "include": ["src/**/*"]
+}
