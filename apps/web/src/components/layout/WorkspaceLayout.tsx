@@ -3,7 +3,7 @@ import { AppHeader } from './AppHeader';
 import { FileTreeSidebar } from './FileTreeSidebar';
 import { MonacoViewer } from '../editor/MonacoViewer';
 import { MonacoDiffViewer } from '../editor/MonacoDiffViewer';
-import { ChatDrawerPlaceholder } from '../chat/ChatDrawerPlaceholder';
+import { ChatDrawer } from '../chat/ChatDrawer';
 import { useWorkspaceStore } from '../../stores/workspaceStore';
 
 export const WorkspaceLayout: React.FC = () => {
@@ -25,7 +25,7 @@ export const WorkspaceLayout: React.FC = () => {
         </main>
 
         {/* Right Pane: AI Assistant Chat Drawer */}
-        <ChatDrawerPlaceholder />
+        <ChatDrawer />
       </div>
     </div>
   );

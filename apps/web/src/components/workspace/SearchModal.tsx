@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Search, FileCode, Loader2, X } from 'lucide-react';
 import { useWorkspaceStore } from '../../stores/workspaceStore';
-import { api } from '../../lib/api';
+import { apiClient } from '../../services/apiClient';
 
 interface SearchResult {
   id: string;
@@ -47,7 +47,7 @@ export const SearchModal: React.FC = () => {
 
     setIsLoading(true);
     try {
-      const res = await api.post(`/projects/${activeRepo.project_id}/repositories/${activeRepo.id}/search`, {
+      const res = await apiClient.post(`/projects/${activeRepo.projectId}/repositories/${activeRepo.id}/search`, {
         query,
       });
       setResults(res.data.data.results || []);
