@@ -10,6 +10,7 @@ import { authRouter } from './modules/auth/auth.router';
 import { projectRouter } from './modules/projects/project.router';
 import { ingestionRouter } from './modules/ingestion/ingestion.router';
 import { chatRouter } from './modules/chat/chat.router';
+import { intelligenceRouter } from './modules/intelligence/intelligence.router';
 
 export const createApp = (): Express => {
   const app = express();
@@ -39,6 +40,7 @@ export const createApp = (): Express => {
   app.use('/api/v1/auth', authRouter);
   app.use('/api/v1/projects', projectRouter);
   app.use('/api/v1/projects', chatRouter);
+  app.use('/api/v1/projects', intelligenceRouter);
   app.use('/api/v1', ingestionRouter);
 
   // 404 Catch-All Route

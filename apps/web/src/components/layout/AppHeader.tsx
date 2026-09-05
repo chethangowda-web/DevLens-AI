@@ -14,7 +14,14 @@ import {
 
 export const AppHeader: React.FC = () => {
   const { user, logout } = useAuthStore();
-  const { isChatOpen, toggleChat } = useWorkspaceStore();
+  const {
+    isChatOpen,
+    toggleChat,
+    setSearchModalOpen,
+    setDebuggerOpen,
+    setExplainerOpen,
+    activeRepo,
+  } = useWorkspaceStore();
   const navigate = useNavigate();
 
   const handleLogout = async () => {
@@ -39,21 +46,18 @@ export const AppHeader: React.FC = () => {
 
         <div className="hidden sm:flex items-center space-x-2 text-xs font-mono text-slate-400">
           <FolderGit2 className="w-3.5 h-3.5 text-primary-light" />
-          <span>workspace / active-repo</span>
+          <span className="truncate max-w-[160px]">{activeRepo ? activeRepo.name : 'workspace'}</span>
         </div>
       </div>
 
       {/* Center Search Bar Trigger */}
       <div className="hidden md:flex items-center">
         <button
-          onClick={() => {
-            // Trigger search modal in future phase
-            console.log('Search triggered');
-          }}
-          className="flex items-center space-x-3 px-3.5 py-1.5 rounded-lg bg-background border border-border/80 text-slate-400 hover:text-slate-200 hover:border-slate-600 transition-all w-80 text-xs shadow-inner"
+          onClick={() => setSearchModalOpen(true)}
+          className="flex items-center space-x-3 px-3.5 py-1.5 rounded-lg bg-background border border-border/80 text-slate-400 hover:text-slate-200 hover:border-slate-600 transition-all w-72 text-xs shadow-inner"
         >
           <Search className="w-3.5 h-3.5 text-slate-500" />
-          <span className="flex-1 text-left">Search codebase & symbols...</span>
+          <span className="flex-1 text-left">Search symbols (Cmd+K)...</span>
           <kbd className="px-1.5 py-0.5 rounded bg-surface border border-border text-[10px] font-mono text-slate-400">
             Ctrl+K
           </kbd>
@@ -61,17 +65,36 @@ export const AppHeader: React.FC = () => {
       </div>
 
       {/* Right Actions & Profile */}
-      <div className="flex items-center space-x-3">
+      <div className="flex items-center space-x-2.5">
+        {/* Quick Intelligence Action Buttons */}
+        <button
+          onClick={() => setExplainerOpen(true)}
+          className="p-1.5 px-2.5 rounded-lg bg-background hover:bg-surfaceHover border border-border text-slate-300 hover:text-white transition-colors text-xs font-medium flex items-center space-x-1.5"
+          title="Explain Code (Cmd+Shift+E)"
+        >
+          <Sparkles className="w-3.5 h-3.5 text-primary-light" />
+          <span className="hidden xl:inline">Explain</span>
+        </button>
+
+        <button
+          onClick={() => setDebuggerOpen(true)}
+          className="p-1.5 px-2.5 rounded-lg bg-background hover:bg-surfaceHover border border-border text-slate-300 hover:text-white transition-colors text-xs font-medium flex items-center space-x-1.5"
+          title="Debug Stack Trace (Cmd+Shift+D)"
+        >
+          <span className="text-rose-400 font-bold">🐛</span>
+          <span className="hidden xl:inline">Debug</span>
+        </button>
+
         <button
           onClick={toggleChat}
-          className={`p-2 rounded-lg border transition-all flex items-center space-x-1.5 text-xs font-medium ${
+          className={`p-1.5 px-2.5 rounded-lg border transition-all flex items-center space-x-1.5 text-xs font-medium ${
             isChatOpen
               ? 'bg-primary/15 border-primary/40 text-primary-light'
               : 'bg-surface border-border text-slate-400 hover:text-slate-200 hover:border-slate-600'
           }`}
           title="Toggle AI Assistant"
         >
-          <Sparkles className="w-4 h-4 text-primary-light" />
+          <Bot className="w-4 h-4 text-primary-light" />
           <span className="hidden lg:inline">Assistant</span>
           {isChatOpen ? (
             <PanelRightClose className="w-3.5 h-3.5" />
