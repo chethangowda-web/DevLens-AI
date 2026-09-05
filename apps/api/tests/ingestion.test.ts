@@ -9,6 +9,13 @@ import { sanitizeCodeContent, containsSecrets } from '../src/utils/secretSanitiz
 import { isIngestableFile } from '../src/utils/fileFilters';
 import { createIngestionWorker } from '../src/workers/ingestion.worker';
 
+// Mock the embedding service to prevent real OpenAI calls during tests
+jest.mock('../src/modules/rag/embedding.service', () => ({
+  generateEmbeddings: jest.fn().mockImplementation(async (texts: string[]) => {
+    return texts.map(() => new Array(1536).fill(0));
+  }),
+}));
+
 describe('Repository Ingestion & Sanitization Suite', () => {
   const app = createApp();
   let worker: ReturnType<typeof createIngestionWorker>;

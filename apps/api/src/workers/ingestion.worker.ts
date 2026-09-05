@@ -10,6 +10,7 @@ import { db } from '../db/client';
 import { sanitizeCodeContent } from '../utils/secretSanitizer';
 import { isIngestableFile } from '../utils/fileFilters';
 import { chunkCodeFile } from '@devlens/code-parser';
+import { generateEmbeddings } from '../modules/rag/embedding.service';
 import { INGESTION_QUEUE_NAME } from '../modules/ingestion/ingestion.queue';
 import { IngestionJobPayload } from '../modules/ingestion/ingestion.types';
 
@@ -106,7 +107,6 @@ export function createIngestionWorker(): Worker<IngestionJobPayload> {
         let validFilesCount = 0;
         let totalChunksCount = 0;
         const maxFileSizeBytes = env.MAX_FILE_SIZE_KB * 1024;
-        const dummyVector = `[${new Array(1536).fill(0).join(',')}]`;
 
         // Clear existing files if re-indexing (cascade deletes chunks)
         await db.query(`DELETE FROM code_files WHERE repository_id = $1`, [repositoryId]);
@@ -138,22 +138,30 @@ export function createIngestionWorker(): Worker<IngestionJobPayload> {
           // Parse code into AST structural chunks
           const chunks = chunkCodeFile(relPath, sanitizedContent, check.language);
 
-          for (const chunk of chunks) {
-            await db.query(
-              `INSERT INTO code_chunks (file_id, content, embedding, start_line, end_line, symbol_name, symbol_type, chunk_hash)
-               VALUES ($1, $2, $3::vector, $4, $5, $6, $7, $8)`,
-              [
-                fileId,
-                chunk.content,
-                dummyVector,
-                chunk.startLine,
-                chunk.endLine,
-                chunk.symbolName,
-                chunk.symbolType,
-                chunk.chunkHash,
-              ]
-            );
-            totalChunksCount++;
+          if (chunks.length > 0) {
+            const chunkTexts = chunks.map((c) => c.content);
+            const embeddings = await generateEmbeddings(chunkTexts);
+
+            for (let j = 0; j < chunks.length; j++) {
+              const chunk = chunks[j];
+              const vectorString = `[${embeddings[j].join(',')}]`;
+
+              await db.query(
+                `INSERT INTO code_chunks (file_id, content, embedding, start_line, end_line, symbol_name, symbol_type, chunk_hash)
+                 VALUES ($1, $2, $3::vector, $4, $5, $6, $7, $8)`,
+                [
+                  fileId,
+                  chunk.content,
+                  vectorString,
+                  chunk.startLine,
+                  chunk.endLine,
+                  chunk.symbolName,
+                  chunk.symbolType,
+                  chunk.chunkHash,
+                ]
+              );
+              totalChunksCount++;
+            }
           }
         }
 
