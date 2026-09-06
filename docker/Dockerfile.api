@@ -25,7 +25,6 @@ COPY turbo.json ./
 
 # Build shared packages and API
 RUN pnpm --filter @devlens/types build
-RUN pnpm --filter @devlens/config build
 RUN pnpm --filter @devlens/code-parser build
 RUN pnpm --filter @devlens/api build
 
@@ -54,9 +53,9 @@ RUN pnpm install --frozen-lockfile --prod
 
 # Copy compiled build artefacts from builder stage
 COPY --from=builder /app/packages/types/dist ./packages/types/dist
-COPY --from=builder /app/packages/config/dist ./packages/config/dist
 COPY --from=builder /app/packages/code-parser/dist ./packages/code-parser/dist
 COPY --from=builder /app/apps/api/dist ./apps/api/dist
+COPY --from=builder /app/apps/api/src/db/migrations ./apps/api/dist/db/migrations
 
 # Security: drop permissions to non-root user
 USER devlens

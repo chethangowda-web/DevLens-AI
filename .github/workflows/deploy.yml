@@ -48,6 +48,10 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Set lower case owner name
+        run: |
+          echo "IMAGE_PREFIX=$(echo ${{ github.repository_owner }} | tr '[:upper:]' '[:lower:]')/devlens" >> $GITHUB_ENV
+
       - name: Extract Docker metadata (version tags)
         id: meta
         uses: docker/metadata-action@v5
@@ -64,8 +68,8 @@ jobs:
           file: docker/Dockerfile.api
           push: true
           tags: ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-api:${{ steps.meta.outputs.version }},${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-api:latest
-          cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-api:cache
-          cache-to: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-api:cache,mode=max
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
           labels: ${{ steps.meta.outputs.labels }}
 
       - name: Build and push Web Docker image
@@ -75,8 +79,8 @@ jobs:
           file: docker/Dockerfile.web
           push: true
           tags: ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-web:${{ steps.meta.outputs.version }},${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-web:latest
-          cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-web:cache
-          cache-to: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-web:cache,mode=max
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
           labels: ${{ steps.meta.outputs.labels }}
 
   # ──────────────────────────────────────────────────────────
@@ -90,10 +94,24 @@ jobs:
     environment: production
 
     steps:
+      - name: Check deployment credentials
+        id: check_creds
+        env:
+          SSH_HOST: ${{ secrets.PROD_SSH_HOST }}
+        run: |
+          if [ -z "$SSH_HOST" ]; then
+            echo "::notice::PROD_SSH_HOST secret is not configured. Docker images built and pushed successfully; skipping VPS SSH deployment."
+            echo "configured=false" >> $GITHUB_OUTPUT
+          else
+            echo "configured=true" >> $GITHUB_OUTPUT
+          fi
+
       - name: Checkout repository (for docker-compose file)
+        if: steps.check_creds.outputs.configured == 'true'
         uses: actions/checkout@v4
 
       - name: Deploy to VPS via SSH
+        if: steps.check_creds.outputs.configured == 'true'
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.PROD_SSH_HOST }}
@@ -145,7 +163,7 @@ jobs:
             echo "=== Deployment complete ==="
 
       - name: Notify Slack on success
-        if: success()
+        if: steps.check_creds.outputs.configured == 'true' && success()
         uses: 8398a7/action-slack@v3
         with:
           status: success
@@ -155,7 +173,7 @@ jobs:
         continue-on-error: true
 
       - name: Notify Slack on failure
-        if: failure()
+        if: steps.check_creds.outputs.configured == 'true' && failure()
         uses: 8398a7/action-slack@v3
         with:
           status: failure

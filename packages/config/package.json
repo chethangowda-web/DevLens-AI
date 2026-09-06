@@ -3,6 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "main": "index.js",
+  "scripts": {
+    "build": "node -e \"process.exit(0)\""
+  },
   "files": [
     "tsconfig.base.json"
   ]
