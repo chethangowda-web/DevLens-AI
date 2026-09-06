@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
 import { Bot, ArrowRight, Lock, Mail, User, AlertCircle } from 'lucide-react';
 
@@ -8,7 +8,10 @@ export const RegisterPage: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const { register, isLoading, error } = useAuthStore();
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+
+  const displayError = searchParams.get('error') || error;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,10 +45,10 @@ export const RegisterPage: React.FC = () => {
         </div>
 
         {/* Error Alert */}
-        {error && (
+        {displayError && (
           <div className="mb-5 p-3 rounded-lg bg-rose-500/10 border border-rose-500/20 flex items-center space-x-2 text-xs text-rose-300">
             <AlertCircle className="w-4 h-4 flex-shrink-0" />
-            <span>{error}</span>
+            <span>{displayError}</span>
           </div>
         )}
 

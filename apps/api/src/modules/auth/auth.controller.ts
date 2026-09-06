@@ -49,8 +49,17 @@ export class AuthController {
     }
   }
 
-  static githubLogin(_req: Request, res: Response, next: NextFunction): void {
+  static async githubLogin(_req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
+      if (!env.GITHUB_CLIENT_ID) {
+        if (env.NODE_ENV !== 'production') {
+          const devAuth = await AuthService.handleLocalDevGitHubLogin();
+          JwtUtil.setAuthCookie(res, devAuth.token);
+          return res.redirect(`${env.FRONTEND_URL}/dashboard`);
+        }
+        throw AppError.badRequest('GitHub OAuth is not configured on this server');
+      }
+
       const state = crypto.randomBytes(16).toString('hex');
       res.cookie('oauth_state', state, {
         httpOnly: true,
@@ -61,6 +70,9 @@ export class AuthController {
       const url = OAuthService.getGitHubAuthUrl(state);
       res.redirect(url);
     } catch (error) {
+      if (env.FRONTEND_URL) {
+        return res.redirect(`${env.FRONTEND_URL}/login?error=${encodeURIComponent((error as Error).message)}`);
+      }
       next(error);
     }
   }

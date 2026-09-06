@@ -111,6 +111,43 @@ export class AuthService {
     };
   }
 
+  static async handleLocalDevGitHubLogin(): Promise<{ user: UserProfileResponse; token: string }> {
+    const mockEmail = 'dev-github@devlens.ai';
+    const mockGithubId = 'dev-github-local-99999';
+    let user = await userRepository.findByGithubId(mockGithubId);
+
+    if (!user) {
+      user = await userRepository.findByEmail(mockEmail);
+      if (user) {
+        user = await userRepository.updateGithubInfo(user.id, mockGithubId, 'https://avatars.githubusercontent.com/u/583231');
+      } else {
+        user = await userRepository.create({
+          email: mockEmail,
+          fullName: 'GitHub Local Developer',
+          avatarUrl: 'https://avatars.githubusercontent.com/u/583231',
+          githubId: mockGithubId,
+        });
+      }
+    }
+
+    const token = JwtUtil.signToken({
+      userId: user.id,
+      email: user.email,
+      role: user.role,
+    });
+
+    return {
+      user: {
+        id: user.id,
+        email: user.email,
+        fullName: user.fullName,
+        avatarUrl: user.avatarUrl,
+        role: user.role,
+      },
+      token,
+    };
+  }
+
   static async getProfile(userId: string): Promise<UserProfileResponse> {
     const user = await userRepository.findById(userId);
     if (!user) {
