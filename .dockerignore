@@ -52,8 +52,9 @@ Thumbs.db
 # CI/CD configs (not needed in container)
 .github/
 
-# Docker files (avoid recursive COPY)
-docker/
+# Docker files (avoid recursive COPY, but include nginx.conf for web image)
+docker/*
+!docker/nginx.conf
 
 # pnpm debug logs
 pnpm-debug.log
