@@ -14,7 +14,8 @@ export class ChatController {
       throw AppError.unauthorized();
     }
 
-    const { projectId, repositoryId } = req.params;
+    const projectId = req.params.projectId as string;
+    const repositoryId = req.params.repositoryId as string | undefined;
     const { message, conversationId, mode, repositoryId: bodyRepoId } = req.body;
 
     if (!message || typeof message !== 'string' || !message.trim()) {
@@ -74,7 +75,7 @@ export class ChatController {
   static async getConversations(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const user = req.user!;
-      const { projectId } = req.params;
+      const projectId = req.params.projectId as string;
 
       const conversations = await ConversationRepository.getConversations(projectId, user.userId);
       res.status(200).json({
@@ -92,7 +93,7 @@ export class ChatController {
   static async createConversation(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const user = req.user!;
-      const { projectId } = req.params;
+      const projectId = req.params.projectId as string;
       const { title } = req.body;
 
       const conversation = await ConversationRepository.createConversation(
@@ -114,7 +115,7 @@ export class ChatController {
    */
   static async getMessages(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { conversationId } = req.params;
+      const conversationId = req.params.conversationId as string;
       const messages = await ConversationRepository.getMessages(conversationId);
       res.status(200).json({
         success: true,
@@ -130,7 +131,7 @@ export class ChatController {
    */
   static async deleteConversation(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { conversationId } = req.params;
+      const conversationId = req.params.conversationId as string;
       await ConversationRepository.deleteConversation(conversationId);
       res.status(200).json({
         success: true,

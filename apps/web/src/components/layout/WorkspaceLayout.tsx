@@ -7,6 +7,10 @@ import { ChatDrawer } from '../chat/ChatDrawer';
 import { SearchModal } from '../workspace/SearchModal';
 import { DebuggerModal } from '../intelligence/DebuggerModal';
 import { ExplainerModal } from '../intelligence/ExplainerModal';
+import { CodeReviewModal } from '../intelligence/CodeReviewModal';
+import { TestGeneratorModal } from '../intelligence/TestGeneratorModal';
+import { CommitGeneratorModal } from '../github/CommitGeneratorModal';
+import { PRSummaryModal } from '../github/PRSummaryModal';
 import { useWorkspaceStore } from '../../stores/workspaceStore';
 
 export const WorkspaceLayout: React.FC = () => {
@@ -35,6 +39,10 @@ export const WorkspaceLayout: React.FC = () => {
       <SearchModal />
       <DebuggerModal />
       <ExplainerModal />
+      <CodeReviewModal />
+      <TestGeneratorModal />
+      <CommitGeneratorModal />
+      <PRSummaryModal />
     </div>
   );
 };

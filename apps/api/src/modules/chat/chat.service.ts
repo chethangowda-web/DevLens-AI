@@ -1,6 +1,6 @@
 import { ConversationRepository } from './conversation.repository';
 import { PromptBuilder } from '../ai/promptBuilder';
-import { defaultLLMProvider, OpenAIAdapter } from '../ai/openai.adapter';
+import { defaultLLMProvider } from '../ai/openai.adapter';
 import { LLMProvider } from '../ai/llmProvider';
 import { hybridSearch, RetrievalResult } from '../rag/retrieval.service';
 import { CodeCitation, Message } from '@devlens/types';

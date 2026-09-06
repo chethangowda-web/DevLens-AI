@@ -12,7 +12,11 @@
     "clean": "turbo run clean && rimraf node_modules",
     "db:up": "docker compose -f docker/docker-compose.yml up -d",
     "db:down": "docker compose -f docker/docker-compose.yml down",
-    "db:logs": "docker compose -f docker/docker-compose.yml logs -f"
+    "db:logs": "docker compose -f docker/docker-compose.yml logs -f",
+    "prod:up": "docker compose -f docker/docker-compose.prod.yml up -d",
+    "prod:down": "docker compose -f docker/docker-compose.prod.yml down",
+    "prod:logs": "docker compose -f docker/docker-compose.prod.yml logs -f",
+    "e2e": "pnpm --filter @devlens/web exec playwright test"
   },
   "devDependencies": {
     "turbo": "^2.4.4",

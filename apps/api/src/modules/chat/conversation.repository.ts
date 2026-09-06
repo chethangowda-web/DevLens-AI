@@ -13,7 +13,7 @@ export class ConversationRepository {
       RETURNING id, project_id AS "projectId", user_id AS "userId", title, created_at AS "createdAt";
     `;
     const result = await db.query(query, [projectId, userId, title]);
-    return result.rows[0];
+    return result.rows[0] as unknown as Conversation;
   }
 
   static async getConversations(projectId: string, userId: string): Promise<Conversation[]> {
@@ -25,7 +25,7 @@ export class ConversationRepository {
       ORDER BY created_at DESC;
     `;
     const result = await db.query(query, [projectId, userId]);
-    return result.rows;
+    return result.rows as unknown as Conversation[];
   }
 
   static async getConversation(conversationId: string): Promise<Conversation | null> {
@@ -36,7 +36,7 @@ export class ConversationRepository {
       WHERE id = $1;
     `;
     const result = await db.query(query, [conversationId]);
-    return result.rows[0] || null;
+    return (result.rows[0] as unknown as Conversation) || null;
   }
 
   static async updateConversationTitle(conversationId: string, title: string): Promise<void> {
@@ -72,7 +72,7 @@ export class ConversationRepository {
       ORDER BY created_at ASC;
     `;
     const result = await db.query(query, [conversationId]);
-    return result.rows;
+    return result.rows as unknown as Message[];
   }
 
   static async saveMessage(
@@ -106,6 +106,6 @@ export class ConversationRepository {
       promptTokens,
       completionTokens,
     ]);
-    return result.rows[0];
+    return result.rows[0] as unknown as Message;
   }
 }

@@ -1,0 +1,70 @@
+# ============================================================
+# Stage 1: Builder — Install dependencies and compile TypeScript
+# ============================================================
+FROM node:20-alpine AS builder
+
+# Install pnpm globally
+RUN npm install -g pnpm@10
+
+WORKDIR /app
+
+# Copy monorepo manifests for cache-optimized dependency installation
+COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
+COPY packages/types/package.json ./packages/types/
+COPY packages/config/package.json ./packages/config/
+COPY packages/code-parser/package.json ./packages/code-parser/
+COPY apps/api/package.json ./apps/api/
+
+# Install all dependencies (including devDeps for TypeScript compilation)
+RUN pnpm install --frozen-lockfile
+
+# Copy source code
+COPY packages/ ./packages/
+COPY apps/api/ ./apps/api/
+COPY turbo.json ./
+
+# Build shared packages and API
+RUN pnpm --filter @devlens/types build
+RUN pnpm --filter @devlens/config build
+RUN pnpm --filter @devlens/code-parser build
+RUN pnpm --filter @devlens/api build
+
+# ============================================================
+# Stage 2: Production Runtime — Minimal footprint image
+# ============================================================
+FROM node:20-alpine AS production
+
+# Security: run as non-root user
+RUN addgroup --system --gid 1001 nodejs \
+  && adduser --system --uid 1001 devlens
+
+RUN npm install -g pnpm@10
+
+WORKDIR /app
+
+# Copy workspace manifests
+COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
+COPY packages/types/package.json ./packages/types/
+COPY packages/config/package.json ./packages/config/
+COPY packages/code-parser/package.json ./packages/code-parser/
+COPY apps/api/package.json ./apps/api/
+
+# Install ONLY production dependencies
+RUN pnpm install --frozen-lockfile --prod
+
+# Copy compiled build artefacts from builder stage
+COPY --from=builder /app/packages/types/dist ./packages/types/dist
+COPY --from=builder /app/packages/config/dist ./packages/config/dist
+COPY --from=builder /app/packages/code-parser/dist ./packages/code-parser/dist
+COPY --from=builder /app/apps/api/dist ./apps/api/dist
+
+# Security: drop permissions to non-root user
+USER devlens
+
+# Health-check: verify API is responsive
+HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
+  CMD wget -qO- http://localhost:${PORT:-3001}/health || exit 1
+
+EXPOSE 3001
+
+CMD ["node", "apps/api/dist/server.js"]

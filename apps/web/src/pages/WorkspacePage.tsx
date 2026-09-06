@@ -1,6 +1,5 @@
 import React, { useEffect } from 'react';
 import { WorkspaceLayout } from '../components/layout/WorkspaceLayout';
-import { SearchModal } from '../components/workspace/SearchModal';
 import { useWorkspaceStore } from '../stores/workspaceStore';
 
 export const WorkspacePage: React.FC = () => {
@@ -48,10 +47,5 @@ export class JwtService {
     }
   }, [openTabs.length, openFile]);
 
-  return (
-    <>
-      <WorkspaceLayout />
-      <SearchModal />
-    </>
-  );
+  return <WorkspaceLayout />;
 };

@@ -9,7 +9,11 @@ import {
   PanelRightOpen, 
   LogOut, 
   FolderGit2,
-  Sparkles
+  Sparkles,
+  ShieldAlert,
+  FlaskConical,
+  GitCommit,
+  GitPullRequest
 } from 'lucide-react';
 
 export const AppHeader: React.FC = () => {
@@ -20,6 +24,10 @@ export const AppHeader: React.FC = () => {
     setSearchModalOpen,
     setDebuggerOpen,
     setExplainerOpen,
+    setCodeReviewOpen,
+    setTestGeneratorOpen,
+    setCommitGenOpen,
+    setPRReviewOpen,
     activeRepo,
   } = useWorkspaceStore();
   const navigate = useNavigate();
@@ -65,11 +73,11 @@ export const AppHeader: React.FC = () => {
       </div>
 
       {/* Right Actions & Profile */}
-      <div className="flex items-center space-x-2.5">
+      <div className="flex items-center space-x-2">
         {/* Quick Intelligence Action Buttons */}
         <button
           onClick={() => setExplainerOpen(true)}
-          className="p-1.5 px-2.5 rounded-lg bg-background hover:bg-surfaceHover border border-border text-slate-300 hover:text-white transition-colors text-xs font-medium flex items-center space-x-1.5"
+          className="p-1.5 px-2 rounded-lg bg-background hover:bg-surfaceHover border border-border text-slate-300 hover:text-white transition-colors text-xs font-medium flex items-center space-x-1.5"
           title="Explain Code (Cmd+Shift+E)"
         >
           <Sparkles className="w-3.5 h-3.5 text-primary-light" />
@@ -77,11 +85,47 @@ export const AppHeader: React.FC = () => {
         </button>
 
         <button
+          onClick={() => setCodeReviewOpen(true)}
+          className="p-1.5 px-2 rounded-lg bg-background hover:bg-surfaceHover border border-border text-slate-300 hover:text-white transition-colors text-xs font-medium flex items-center space-x-1.5"
+          title="Automated Code Review (Cmd+Shift+R)"
+        >
+          <ShieldAlert className="w-3.5 h-3.5 text-rose-400" />
+          <span className="hidden xl:inline">Review</span>
+        </button>
+
+        <button
+          onClick={() => setTestGeneratorOpen(true)}
+          className="p-1.5 px-2 rounded-lg bg-background hover:bg-surfaceHover border border-border text-slate-300 hover:text-white transition-colors text-xs font-medium flex items-center space-x-1.5"
+          title="Generate Tests (Cmd+Shift+T)"
+        >
+          <FlaskConical className="w-3.5 h-3.5 text-emerald-400" />
+          <span className="hidden xl:inline">Tests</span>
+        </button>
+
+        <button
+          onClick={() => setCommitGenOpen(true)}
+          className="p-1.5 px-2 rounded-lg bg-background hover:bg-surfaceHover border border-border text-slate-300 hover:text-white transition-colors text-xs font-medium flex items-center space-x-1.5"
+          title="Generate Commit Message (Cmd+Shift+C)"
+        >
+          <GitCommit className="w-3.5 h-3.5 text-purple-400" />
+          <span className="hidden xl:inline">Commit</span>
+        </button>
+
+        <button
+          onClick={() => setPRReviewOpen(true)}
+          className="p-1.5 px-2 rounded-lg bg-background hover:bg-surfaceHover border border-border text-slate-300 hover:text-white transition-colors text-xs font-medium flex items-center space-x-1.5"
+          title="PR Review & Summarizer (Cmd+Shift+P)"
+        >
+          <GitPullRequest className="w-3.5 h-3.5 text-cyan-400" />
+          <span className="hidden xl:inline">PR</span>
+        </button>
+
+        <button
           onClick={() => setDebuggerOpen(true)}
-          className="p-1.5 px-2.5 rounded-lg bg-background hover:bg-surfaceHover border border-border text-slate-300 hover:text-white transition-colors text-xs font-medium flex items-center space-x-1.5"
+          className="p-1.5 px-2 rounded-lg bg-background hover:bg-surfaceHover border border-border text-slate-300 hover:text-white transition-colors text-xs font-medium flex items-center space-x-1.5"
           title="Debug Stack Trace (Cmd+Shift+D)"
         >
-          <span className="text-rose-400 font-bold">🐛</span>
+          <span className="text-rose-400 font-bold text-xs">🐛</span>
           <span className="hidden xl:inline">Debug</span>
         </button>
 

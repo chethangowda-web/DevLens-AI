@@ -29,10 +29,11 @@ const envSchema = z.object({
   JWT_EXPIRES_IN: z.string().default('7d'),
   COOKIE_SECRET: z.string().min(16, 'COOKIE_SECRET must be at least 16 characters').default('devlens_local_cookie_secret_key_development!'),
 
-  // OAuth (Optional in dev)
+  // OAuth & GitHub Webhooks (Optional in dev)
   GITHUB_CLIENT_ID: z.string().optional(),
   GITHUB_CLIENT_SECRET: z.string().optional(),
   GITHUB_CALLBACK_URL: z.string().default('http://localhost:5000/api/v1/auth/github/callback'),
+  GITHUB_WEBHOOK_SECRET: z.string().default('devlens_local_github_webhook_secret_key!'),
 
   // AI Providers (Optional in dev)
   OPENAI_API_KEY: z.string().optional(),

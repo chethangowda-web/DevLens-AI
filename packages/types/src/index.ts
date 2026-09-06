@@ -155,6 +155,54 @@ export interface CodeReviewResponse {
   issues: CodeReviewIssue[];
 }
 
+export interface TestCaseItem {
+  name: string;
+  type: 'happy_path' | 'edge_case' | 'error_handling';
+  description: string;
+}
+
+export type TestFramework = 'jest' | 'vitest' | 'pytest' | 'mocha' | 'go_test';
+
+export interface TestGenerationResponse {
+  framework: TestFramework;
+  targetFilePath: string;
+  testFilePath: string;
+  testCode: string;
+  summary: string;
+  testCases: TestCaseItem[];
+}
+
+// GitHub Integration & PR Automation DTOs
+export interface GitHubIntegration {
+  id: string;
+  userId: string;
+  installationId: string;
+  repositoryFullName: string;
+  createdAt: Date;
+}
+
+export interface PRReviewSummary {
+  id?: string;
+  prNumber?: number;
+  prTitle?: string;
+  prUrl?: string;
+  summary: string;
+  whatChanged: string[];
+  potentialRisks: string[];
+  score: number; // 0-100
+  recommendations: string[];
+}
+
+export type CommitType = 'feat' | 'fix' | 'docs' | 'style' | 'refactor' | 'perf' | 'test' | 'chore' | 'ci';
+
+export interface CommitMessageResponse {
+  commitMessage: string;
+  type: CommitType;
+  scope?: string;
+  description: string;
+  breakingChanges?: string;
+}
+
 // API Generic Response Envelope
 export interface ApiResponse<T = unknown> {
   success: boolean;

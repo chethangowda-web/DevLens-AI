@@ -1,0 +1,165 @@
+name: CD — Build Docker Images & Deploy to Production
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: 'Docker image tag to deploy (default: latest commit SHA)'
+        required: false
+        default: ''
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false   # Never cancel an active production deploy
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_PREFIX: ${{ github.repository_owner }}/devlens
+
+jobs:
+  # ──────────────────────────────────────────────────────────
+  # Job 1: Build & Push Docker Images to GitHub Container Registry
+  # ──────────────────────────────────────────────────────────
+  build-and-push:
+    name: Build & Push Docker Images
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    permissions:
+      contents: read
+      packages: write
+
+    outputs:
+      image_tag: ${{ steps.meta.outputs.version }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx (for layer caching)
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract Docker metadata (version tags)
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}
+          tags: |
+            type=sha,prefix=sha-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push API Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: docker/Dockerfile.api
+          push: true
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-api:${{ steps.meta.outputs.version }},${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-api:latest
+          cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-api:cache
+          cache-to: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-api:cache,mode=max
+          labels: ${{ steps.meta.outputs.labels }}
+
+      - name: Build and push Web Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: docker/Dockerfile.web
+          push: true
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-web:${{ steps.meta.outputs.version }},${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-web:latest
+          cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-web:cache
+          cache-to: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-web:cache,mode=max
+          labels: ${{ steps.meta.outputs.labels }}
+
+  # ──────────────────────────────────────────────────────────
+  # Job 2: Deploy to Production VPS via SSH
+  # ──────────────────────────────────────────────────────────
+  deploy:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    timeout-minutes: 15
+    environment: production
+
+    steps:
+      - name: Checkout repository (for docker-compose file)
+        uses: actions/checkout@v4
+
+      - name: Deploy to VPS via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.PROD_SSH_HOST }}
+          username: ${{ secrets.PROD_SSH_USER }}
+          key: ${{ secrets.PROD_SSH_PRIVATE_KEY }}
+          port: ${{ secrets.PROD_SSH_PORT || 22 }}
+          timeout: 120s
+          script: |
+            set -euo pipefail
+
+            echo "=== DevLens AI — Production Deploy ==="
+            echo "Image tag: ${{ needs.build-and-push.outputs.image_tag }}"
+
+            # Navigate to deployment directory
+            cd /opt/devlens
+
+            # Pull latest docker-compose config from repo
+            git pull origin main
+
+            # Log into GitHub Container Registry
+            echo "${{ secrets.GITHUB_TOKEN }}" | \
+              docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+            # Export image tag for docker compose
+            export IMAGE_TAG="${{ needs.build-and-push.outputs.image_tag }}"
+
+            # Pull latest images
+            docker compose -f docker/docker-compose.prod.yml pull
+
+            # Zero-downtime rolling update
+            docker compose -f docker/docker-compose.prod.yml up -d \
+              --remove-orphans \
+              --timeout 60
+
+            # Wait for API health check
+            echo "Waiting for API health check..."
+            for i in $(seq 1 12); do
+              if curl -sf http://localhost/api/v1/health > /dev/null 2>&1; then
+                echo "✅ API is healthy!"
+                break
+              fi
+              echo "Attempt $i/12 — waiting 10s..."
+              sleep 10
+            done
+
+            # Prune unused images to reclaim disk space
+            docker image prune -f
+
+            echo "=== Deployment complete ==="
+
+      - name: Notify Slack on success
+        if: success()
+        uses: 8398a7/action-slack@v3
+        with:
+          status: success
+          text: "✅ DevLens AI deployed to production successfully. Tag: ${{ needs.build-and-push.outputs.image_tag }}"
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        continue-on-error: true
+
+      - name: Notify Slack on failure
+        if: failure()
+        uses: 8398a7/action-slack@v3
+        with:
+          status: failure
+          text: "🚨 DevLens AI production deploy FAILED. Tag: ${{ needs.build-and-push.outputs.image_tag }}"
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        continue-on-error: true

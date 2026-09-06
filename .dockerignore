@@ -1,0 +1,59 @@
+# Version Control
+.git
+.gitignore
+
+# Node modules (will be installed inside container)
+node_modules
+**/node_modules
+
+# Build outputs (builder stage re-compiles)
+dist
+**/dist
+
+# Turborepo cache
+.turbo
+**/.turbo
+
+# Development configs
+.env
+.env.local
+.env.development
+.env.*.local
+apps/api/.env
+apps/web/.env
+
+# Logs
+*.log
+logs/
+**/logs/
+
+# Test files
+**/tests/
+**/*.test.ts
+**/*.spec.ts
+apps/web/e2e/
+coverage/
+**/coverage/
+
+# Editor / IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS metadata
+.DS_Store
+Thumbs.db
+
+# Documentation (not needed at runtime)
+*.md
+!README.md
+
+# CI/CD configs (not needed in container)
+.github/
+
+# Docker files (avoid recursive COPY)
+docker/
+
+# pnpm debug logs
+pnpm-debug.log

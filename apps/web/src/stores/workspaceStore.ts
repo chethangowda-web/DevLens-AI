@@ -26,6 +26,10 @@ interface WorkspaceState {
   isSearchModalOpen: boolean;
   isDebuggerOpen: boolean;
   isExplainerOpen: boolean;
+  isCodeReviewOpen: boolean;
+  isTestGeneratorOpen: boolean;
+  isCommitGenOpen: boolean;
+  isPRReviewOpen: boolean;
 
   setProjects: (projects: Array<Project & { repositories: Repository[] }>) => void;
   setActiveProject: (project: (Project & { repositories: Repository[] }) | null) => void;
@@ -43,6 +47,10 @@ interface WorkspaceState {
   setSearchModalOpen: (open: boolean) => void;
   setDebuggerOpen: (open: boolean) => void;
   setExplainerOpen: (open: boolean) => void;
+  setCodeReviewOpen: (open: boolean) => void;
+  setTestGeneratorOpen: (open: boolean) => void;
+  setCommitGenOpen: (open: boolean) => void;
+  setPRReviewOpen: (open: boolean) => void;
 }
 
 export const useWorkspaceStore = create<WorkspaceState>((set) => ({
@@ -60,6 +68,10 @@ export const useWorkspaceStore = create<WorkspaceState>((set) => ({
   isSearchModalOpen: false,
   isDebuggerOpen: false,
   isExplainerOpen: false,
+  isCodeReviewOpen: false,
+  isTestGeneratorOpen: false,
+  isCommitGenOpen: false,
+  isPRReviewOpen: false,
 
   setProjects: (projects) => set({ projects }),
   setActiveProject: (project) => set({ activeProject: project }),
@@ -103,4 +115,8 @@ export const useWorkspaceStore = create<WorkspaceState>((set) => ({
   setSearchModalOpen: (open) => set({ isSearchModalOpen: open }),
   setDebuggerOpen: (open) => set({ isDebuggerOpen: open }),
   setExplainerOpen: (open) => set({ isExplainerOpen: open }),
+  setCodeReviewOpen: (open) => set({ isCodeReviewOpen: open }),
+  setTestGeneratorOpen: (open) => set({ isTestGeneratorOpen: open }),
+  setCommitGenOpen: (open) => set({ isCommitGenOpen: open }),
+  setPRReviewOpen: (open) => set({ isPRReviewOpen: open }),
 }));
